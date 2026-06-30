@@ -4,6 +4,7 @@ import com.devsuperior.dscommerce.dto.ProductDTO;
 import com.devsuperior.dscommerce.dto.ProductMinDTO;
 import com.devsuperior.dscommerce.entities.Product;
 import com.devsuperior.dscommerce.repositories.ProductRepository;
+import com.devsuperior.dscommerce.services.exceptions.DatabaseException;
 import com.devsuperior.dscommerce.services.exceptions.ResourceNotFoundException;
 import com.devsuperior.dscommerce.tests.ProductFactory;
 import jakarta.persistence.EntityNotFoundException;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -36,7 +38,7 @@ public class ProductServiceTests {
     @Mock
     private ProductRepository repository;
 
-    private long existingProductId, nonExistingProductId;
+    private long existingProductId, nonExistingProductId, dependentProductId;
     private String productName;
     private Product product;
     private ProductDTO productDTO;
@@ -46,6 +48,7 @@ public class ProductServiceTests {
     void setUp() throws Exception {
         existingProductId = 1L;
         nonExistingProductId = 2L;
+        dependentProductId = 3L;
 
         productName = "Playstation 5";
 
@@ -106,6 +109,22 @@ public class ProductServiceTests {
         * */
         Mockito.when(repository.getReferenceById(existingProductId)).thenReturn(product);
         Mockito.when(repository.getReferenceById(nonExistingProductId)).thenThrow(new EntityNotFoundException());
+
+        /*Problema 4: Deletar produto
+
+        Implemente os testes unitários para o método ProductSevice.delete, cobrindo os seguintes cenários. Lembre-se de mockar os métodos do ProductRepository que são usados pelo ProductService.delete.
+        1.	Deleção de produto deleta produto para id existente
+        2.	Deleção de produto lança exceção ResourceNotFoundException para id inexistente
+        3.	Deleção de produto lança exceção DatabaseException para id dependente (quando o produto participa de um pedido).
+
+        * */
+        Mockito.when(repository.existsById(existingProductId)).thenReturn(true);
+        Mockito.when(repository.existsById(dependentProductId)).thenReturn(true);
+        Mockito.when(repository.existsById(nonExistingProductId)).thenReturn(false);
+
+        //Faz mocks
+        Mockito.doNothing().when(repository).deleteById(existingProductId);
+        Mockito.doThrow(DataIntegrityViolationException.class).when(repository).deleteById(dependentProductId);
     }
 
     @Test
@@ -163,6 +182,31 @@ public class ProductServiceTests {
         Assertions.assertThrows(ResourceNotFoundException.class, () -> {
             //Busca o método classe ProductService
             service.update(nonExistingProductId, productDTO);
+        });
+    }
+
+    @Test
+    public void deleteShouldDoNothingWhenIdExists() {
+        Assertions.assertDoesNotThrow(()-> {
+            service.delete(existingProductId);
+        });
+    }
+
+    @Test
+    public void deleteShouldThrowResourceNotFoundExceptionWhenIdDoesNotExist() {
+        //Espera receber a exceção ResourceNotFoundException
+        Assertions.assertThrows(ResourceNotFoundException.class, () -> {
+            //Busca o método classe ProductService
+            service.delete(nonExistingProductId);
+        });
+    }
+
+    @Test
+    public void deleteShouldThrowDatabaseExceptionWhenIdDoesNotExist() {
+        //Espera receber a exceção DatabaseException
+        Assertions.assertThrows(DatabaseException.class, () -> {
+            //Busca o método classe ProductService
+            service.delete(dependentProductId);
         });
     }
 }
