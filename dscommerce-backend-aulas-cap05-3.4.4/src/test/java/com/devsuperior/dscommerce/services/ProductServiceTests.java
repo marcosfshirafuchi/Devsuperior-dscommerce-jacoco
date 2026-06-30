@@ -6,6 +6,7 @@ import com.devsuperior.dscommerce.entities.Product;
 import com.devsuperior.dscommerce.repositories.ProductRepository;
 import com.devsuperior.dscommerce.services.exceptions.ResourceNotFoundException;
 import com.devsuperior.dscommerce.tests.ProductFactory;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -95,6 +96,16 @@ public class ProductServiceTests {
 
         //O método save do ProductRepository recebe qualquer coisa(any()) e retorna um Product(product)
         Mockito.when(repository.save(any())).thenReturn(product);
+
+        /*Problema 3: Atualizar produto
+
+        Implemente os testes unitários do método ProductService.update, cobrindo os seguintes cenários. Lembre-se de mockar os métodos do ProductRepository que são usados pelo ProductService.update.
+        1.	Atualização de produto atualiza produto para id existente
+        2.	Atualização de produto lança exceção ResourceNotFoundException para produto inexistente
+
+        * */
+        Mockito.when(repository.getReferenceById(existingProductId)).thenReturn(product);
+        Mockito.when(repository.getReferenceById(nonExistingProductId)).thenThrow(new EntityNotFoundException());
     }
 
     @Test
@@ -130,10 +141,28 @@ public class ProductServiceTests {
     }
 
     @Test
-    public void insertShouldReturnProductDTO(){
+    public void insertShouldReturnProductDTO() {
         ProductDTO result = service.insert(new ProductDTO(product));
 
         Assertions.assertNotNull(result);
         Assertions.assertEquals(result.getId(), product.getId());
+    }
+
+    @Test
+    public void updateShouldReturnProductDTOWhenIdExists() {
+        ProductDTO result = service.update(existingProductId, productDTO);
+
+        Assertions.assertNotNull(result);
+        Assertions.assertEquals(result.getId(), existingProductId);
+        Assertions.assertEquals(result.getName(), productDTO.getName());
+    }
+
+    @Test
+    public void updateShouldReturnResourceNotFoundExceptionWhenIdDoesNotExist() {
+        //Espera receber a exceção ResourceNotFoundException
+        Assertions.assertThrows(ResourceNotFoundException.class, () -> {
+            //Busca o método classe ProductService
+            service.update(nonExistingProductId, productDTO);
+        });
     }
 }
