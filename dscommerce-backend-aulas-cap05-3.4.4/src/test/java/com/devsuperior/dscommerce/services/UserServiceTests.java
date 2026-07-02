@@ -1,5 +1,6 @@
 package com.devsuperior.dscommerce.services;
 
+import com.devsuperior.dscommerce.dto.UserDTO;
 import com.devsuperior.dscommerce.entities.User;
 import com.devsuperior.dscommerce.projections.UserDetailsProjection;
 import com.devsuperior.dscommerce.repositories.UserRepository;
@@ -56,6 +57,7 @@ public class UserServiceTests {
 
         Mockito.when(repository.findByEmail(existingUsername)).thenReturn(Optional.of(user));
         Mockito.when(repository.findByEmail(nonExistingUsername)).thenReturn(Optional.empty());
+
     }
 
     @Test
@@ -73,7 +75,7 @@ public class UserServiceTests {
     }
 
     @Test
-    public void autenticatedShouldReturnUserWhenUserExists() {
+    public void autenticatedShouldReturnUserWhenUserAutenticated() {
         Mockito.when(userUtil.getLoggedUsername()).thenReturn(existingUsername);
         User result = service.authenticated();
 
@@ -87,6 +89,35 @@ public class UserServiceTests {
 
         Assertions.assertThrows(UsernameNotFoundException.class, () -> {
             service.authenticated();
+        });
+    }
+
+    /*Problema 6: Consultar usuário logado
+
+    Implemente os testes unitários do método UserService.getMe, cobrindo todos os cenários importantes. Você deve identificar os casos de testes necessários para cobertura completa do método getMe.
+
+    * */
+    @Test
+    public void getMeShouldReturnUserDTOWhenUserIsAutenticated(){
+
+        //O spy está encapsulando a instancia service e está mockando
+        UserService spyUserService = Mockito.spy(service);
+        Mockito.doReturn(user).when(spyUserService).authenticated();
+
+        UserDTO result = spyUserService.getMe();
+
+        Assertions.assertNotNull(result);
+        Assertions.assertEquals(result.getEmail(), existingUsername);
+    }
+
+    @Test
+    public void getMeShouldThrowUsernameNotFoundExceptionWhenUserNotAutenticated(){
+
+        UserService spyUserService = Mockito.spy(service);
+        Mockito.doThrow(UsernameNotFoundException.class).when(spyUserService).authenticated();
+
+        Assertions.assertThrows(UsernameNotFoundException.class, () ->{
+            UserDTO result = spyUserService.getMe();
         });
     }
 }
