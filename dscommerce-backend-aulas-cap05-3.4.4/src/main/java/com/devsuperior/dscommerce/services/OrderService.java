@@ -45,25 +45,25 @@ public class OrderService {
     }
 
     @Transactional
-	public OrderDTO insert(OrderDTO dto) {
-		
-    	Order order = new Order();
-    	
-    	order.setMoment(Instant.now());
-    	order.setStatus(OrderStatus.WAITING_PAYMENT);
-    	
-    	User user = userService.authenticated();
-    	order.setClient(user);
-    	
-    	for (OrderItemDTO itemDto : dto.getItems()) {
-    		Product product = productRepository.getReferenceById(itemDto.getProductId());
-    		OrderItem item = new OrderItem(order, product, itemDto.getQuantity(), product.getPrice());
-    		order.getItems().add(item);
-    	}
-    	
-    	repository.save(order);
-    	orderItemRepository.saveAll(order.getItems());
-    	
-    	return new OrderDTO(order);
-	}
+    public OrderDTO insert(OrderDTO dto) {
+
+        Order order = new Order();
+
+        order.setMoment(Instant.now());
+        order.setStatus(OrderStatus.WAITING_PAYMENT);
+
+        User user = userService.authenticated();
+        order.setClient(user);
+
+        for (OrderItemDTO itemDto : dto.getItems()) {
+            Product product = productRepository.getReferenceById(itemDto.getProductId());
+            OrderItem item = new OrderItem(order, product, itemDto.getQuantity(), product.getPrice());
+            order.getItems().add(item);
+        }
+
+        order = repository.save(order);
+        orderItemRepository.saveAll(order.getItems());
+
+        return new OrderDTO(order);
+    }
 }
