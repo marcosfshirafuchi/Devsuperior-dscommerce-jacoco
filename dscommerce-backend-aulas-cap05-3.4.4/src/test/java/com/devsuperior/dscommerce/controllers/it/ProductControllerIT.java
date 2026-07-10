@@ -3,14 +3,15 @@ package com.devsuperior.dscommerce.controllers.it;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -23,10 +24,13 @@ public class ProductControllerIT {
 
     @Autowired
     private MockMvc mockMvc;
+
+    private String adminToken;
+
     private String productName;
 
     @BeforeEach
-    void setUp(){
+    void setUp() {
         productName = "Macbook";
     }
     /*Exercícios de fixação: Testes de API com MockMvc*/
@@ -41,7 +45,7 @@ public class ProductControllerIT {
     public void findAllShouldReturnPageWhenNameParamIsNotEmpty() throws Exception {
         ResultActions result = mockMvc
                 .perform(get("/products?name={productName}", productName)
-                .accept(MediaType.APPLICATION_JSON));
+                        .accept(MediaType.APPLICATION_JSON));
 
         result.andExpect(status().isOk());
         result.andExpect(jsonPath("$.content[0].id").value(3L));
@@ -62,6 +66,33 @@ public class ProductControllerIT {
         result.andExpect(jsonPath("$.content[0].name").value("The Lord of the Rings"));
         result.andExpect(jsonPath("$.content[0].price").value(90.5));
         result.andExpect(jsonPath("$.content[0].imgUrl").value("https://raw.githubusercontent.com/devsuperior/dscatalog-resources/master/backend/img/1-big.jpg"));
+    }
 
+    /*Problema 2: Inserir produto
+
+    Implemente os testes de API usando MockMvc para inserção de produto (método POST do ProductController), considerando os seguintes cenários. Lembre-se de inserir o token no cabeçalho da requisição.
+    1.	Inserção de produto insere produto com dados válidos quando logado como admin
+    2.	Inserção de produto retorna 422 e mensagens customizadas com dados inválidos quando logado como admin e campo name for inválido
+    3.	Inserção de produto retorna 422 e mensagens customizadas com dados inválidos quando logado como admin e campo description for inválido
+    4.	Inserção de produto retorna 422 e mensagens customizadas com dados inválidos quando logado como admin e campo price for negativo
+    5.	Inserção de produto retorna 422 e mensagens customizadas com dados inválidos quando logado como admin e campo price for zero
+    6.	Inserção de produto retorna 422 e mensagens customizadas com dados inválidos quando logado como admin e não tiver categoria associada
+    7.	Inserção de produto retorna 403 quando logado como cliente
+    8.	Inserção de produto retorna 401 quando não logado como admin ou cliente
+
+    * */
+
+    @Test
+    public void insertShouldReturnProductDTOCreatedWhenAdminLogged() throws Exception {
+        String jsonBody = "";
+        ResultActions result = mockMvc
+                //No perform vai testar o metódo get do controller e sua url
+                .perform(post("/products")
+                        //Vai passar o Bearer Token
+                        .header("Authorization", "Bearer " + adminToken)
+                        //Vai passar o corpo da requisição
+                        .content(jsonBody)
+                        //O Tipo da response do método
+                        .accept(MediaType.APPLICATION_JSON));
     }
 }
