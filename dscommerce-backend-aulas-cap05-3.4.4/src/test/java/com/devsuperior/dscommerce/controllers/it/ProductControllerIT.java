@@ -256,4 +256,44 @@ public class ProductControllerIT {
         //Verificar o status
         result.andExpect(status().isUnprocessableEntity());
     }
+
+    //7.	Inserção de produto retorna 403 quando logado como cliente
+    @Test
+    public void insertShouldReturnForbiddenWhenClientLogged() throws Exception{
+        String jsonBody = objectMapper.writeValueAsString(productDTO);
+        ResultActions result =mockMvc
+                //No perform vai testar o metódo get do controller e sua url
+                .perform(post("/products")
+                        //Vai passar o Bearer Token
+                        .header("Authorization", "Bearer " + clientToken)
+                        //Vai passar o corpo da requisição
+                        .content(jsonBody)
+                        //Fala que o formato da requisição é Json
+                        .contentType(MediaType.APPLICATION_JSON)
+                        //O Tipo da response do método
+                        .accept(MediaType.APPLICATION_JSON));
+
+        //Verificar o status
+        result.andExpect(status().isForbidden());
+    }
+
+    //8.	Inserção de produto retorna 401 quando não logado como admin ou cliente
+    @Test
+    public void insertShouldReturnUnauthorizedWhenInvalidToken() throws Exception{
+        String jsonBody = objectMapper.writeValueAsString(productDTO);
+        ResultActions result =mockMvc
+                //No perform vai testar o metódo get do controller e sua url
+                .perform(post("/products")
+                        //Vai passar o Bearer Token
+                        .header("Authorization", "Bearer " + invalidToken)
+                        //Vai passar o corpo da requisição
+                        .content(jsonBody)
+                        //Fala que o formato da requisição é Json
+                        .contentType(MediaType.APPLICATION_JSON)
+                        //O Tipo da response do método
+                        .accept(MediaType.APPLICATION_JSON));
+
+        //Verificar o status
+        result.andExpect(status().isUnauthorized());
+    }
 }
