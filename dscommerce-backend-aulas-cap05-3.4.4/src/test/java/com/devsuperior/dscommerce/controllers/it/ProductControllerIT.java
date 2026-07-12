@@ -38,7 +38,7 @@ public class ProductControllerIT {
 
     private String clientUsername, clientPassword, adminUsername, adminPassword;
 
-    private String clientToken,adminToken, invalidToken;
+    private String clientToken, adminToken, invalidToken;
 
     private String productName;
 
@@ -56,13 +56,13 @@ public class ProductControllerIT {
         productName = "Macbook Pro";
 
         clientToken = tokenUtil.obtainAccessToken(mockMvc, clientUsername, clientPassword);
-        adminToken = tokenUtil.obtainAccessToken(mockMvc, adminUsername,adminPassword);
+        adminToken = tokenUtil.obtainAccessToken(mockMvc, adminUsername, adminPassword);
         invalidToken = adminToken + "xpto"; // Simulates wrong password
 
         //Instanciar o método request do Post
         Category category = new Category(2L, "Eletro");
         //Inserindo o conteudo da request do método Post
-        product = new Product(null,"Console Playstation 5","Lorem ipsum, dolor sit amet consectetur adipisicing elit. Qui ad, adipisci illum ipsam velit et odit eaque reprehenderit ex maxime delectus dolore labore, quisquam quae tempora natus esse aliquam veniam doloremque quam minima culpa alias maiores commodi. Perferendis enim", 3999.90,"https://raw.githubusercontent.com/devsuperior/dscatalog-resources/master/backend/img/1-big.jpg");
+        product = new Product(null, "Console Playstation 5", "Lorem ipsum, dolor sit amet consectetur adipisicing elit. Qui ad, adipisci illum ipsam velit et odit eaque reprehenderit ex maxime delectus dolore labore, quisquam quae tempora natus esse aliquam veniam doloremque quam minima culpa alias maiores commodi. Perferendis enim", 3999.90, "https://raw.githubusercontent.com/devsuperior/dscatalog-resources/master/backend/img/1-big.jpg");
         product.getCategories().add(category);
         productDTO = new ProductDTO(product);
     }
@@ -146,5 +146,114 @@ public class ProductControllerIT {
         //Verifica o categories
         result.andExpect(jsonPath("$.categories[0].id").value(2L));
 
+    }
+
+    //2.	Inserção de produto retorna 422 e mensagens customizadas com dados inválidos quando logado como admin e campo name for inválido
+    @Test
+    public void insertShouldReturnUnprocessableEntityCreatedWhenAdminLoggedAndInvalidName() throws Exception {
+        product.setName("ab");
+        productDTO = new ProductDTO(product);
+        String jsonBody = objectMapper.writeValueAsString(productDTO);
+        ResultActions result =mockMvc
+                //No perform vai testar o metódo get do controller e sua url
+                .perform(post("/products")
+                        //Vai passar o Bearer Token
+                        .header("Authorization", "Bearer " + adminToken)
+                        //Vai passar o corpo da requisição
+                        .content(jsonBody)
+                        //Fala que o formato da requisição é Json
+                        .contentType(MediaType.APPLICATION_JSON)
+                        //O Tipo da response do método
+                        .accept(MediaType.APPLICATION_JSON));
+
+        //Verificar o status
+        result.andExpect(status().isUnprocessableEntity());
+    }
+
+    //3.	Inserção de produto retorna 422 e mensagens customizadas com dados inválidos quando logado como admin e campo description for inválido
+    @Test
+    public void insertShouldReturnUnprocessableEntityCreatedWhenAdminLoggedAndInvalidDescription() throws Exception {
+        product.setDescription("ab");
+        productDTO = new ProductDTO(product);
+        String jsonBody = objectMapper.writeValueAsString(productDTO);
+        ResultActions result =mockMvc
+                //No perform vai testar o metódo get do controller e sua url
+                .perform(post("/products")
+                        //Vai passar o Bearer Token
+                        .header("Authorization", "Bearer " + adminToken)
+                        //Vai passar o corpo da requisição
+                        .content(jsonBody)
+                        //Fala que o formato da requisição é Json
+                        .contentType(MediaType.APPLICATION_JSON)
+                        //O Tipo da response do método
+                        .accept(MediaType.APPLICATION_JSON));
+
+        //Verificar o status
+        result.andExpect(status().isUnprocessableEntity());
+    }
+
+    //4.	Inserção de produto retorna 422 e mensagens customizadas com dados inválidos quando logado como admin e campo price for negativo
+    @Test
+    public void insertShouldReturnUnprocessableEntityCreatedWhenAdminLoggedAndPriceIsNegative() throws Exception {
+        product.setPrice(-50.0);
+        productDTO = new ProductDTO(product);
+        String jsonBody = objectMapper.writeValueAsString(productDTO);
+        ResultActions result =mockMvc
+                //No perform vai testar o metódo get do controller e sua url
+                .perform(post("/products")
+                        //Vai passar o Bearer Token
+                        .header("Authorization", "Bearer " + adminToken)
+                        //Vai passar o corpo da requisição
+                        .content(jsonBody)
+                        //Fala que o formato da requisição é Json
+                        .contentType(MediaType.APPLICATION_JSON)
+                        //O Tipo da response do método
+                        .accept(MediaType.APPLICATION_JSON));
+
+        //Verificar o status
+        result.andExpect(status().isUnprocessableEntity());
+    }
+
+    //5.	Inserção de produto retorna 422 e mensagens customizadas com dados inválidos quando logado como admin e campo price for zero
+    @Test
+    public void insertShouldReturnUnprocessableEntityCreatedWhenAdminLoggedAndPriceIsZero() throws Exception {
+        product.setPrice(0.0);
+        productDTO = new ProductDTO(product);
+        String jsonBody = objectMapper.writeValueAsString(productDTO);
+        ResultActions result =mockMvc
+                //No perform vai testar o metódo get do controller e sua url
+                .perform(post("/products")
+                        //Vai passar o Bearer Token
+                        .header("Authorization", "Bearer " + adminToken)
+                        //Vai passar o corpo da requisição
+                        .content(jsonBody)
+                        //Fala que o formato da requisição é Json
+                        .contentType(MediaType.APPLICATION_JSON)
+                        //O Tipo da response do método
+                        .accept(MediaType.APPLICATION_JSON));
+
+        //Verificar o status
+        result.andExpect(status().isUnprocessableEntity());
+    }
+    //6.	Inserção de produto retorna 422 e mensagens customizadas com dados inválidos quando logado como admin e não tiver categoria associada
+    @Test
+    public void insertShouldReturnUnprocessableEntityCreatedWhenAdminLoggedAndProductHasNotCategory() throws Exception {
+        product.getCategories().clear();
+        productDTO = new ProductDTO(product);
+        String jsonBody = objectMapper.writeValueAsString(productDTO);
+        ResultActions result =mockMvc
+                //No perform vai testar o metódo get do controller e sua url
+                .perform(post("/products")
+                        //Vai passar o Bearer Token
+                        .header("Authorization", "Bearer " + adminToken)
+                        //Vai passar o corpo da requisição
+                        .content(jsonBody)
+                        //Fala que o formato da requisição é Json
+                        .contentType(MediaType.APPLICATION_JSON)
+                        //O Tipo da response do método
+                        .accept(MediaType.APPLICATION_JSON));
+
+        //Verificar o status
+        result.andExpect(status().isUnprocessableEntity());
     }
 }
