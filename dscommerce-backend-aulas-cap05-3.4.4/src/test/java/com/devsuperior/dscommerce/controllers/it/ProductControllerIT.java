@@ -1,6 +1,7 @@
 package com.devsuperior.dscommerce.controllers.it;
 
 import com.devsuperior.dscommerce.dto.ProductDTO;
+import com.devsuperior.dscommerce.entities.Category;
 import com.devsuperior.dscommerce.entities.Product;
 import com.devsuperior.dscommerce.tests.TokenUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -57,6 +58,13 @@ public class ProductControllerIT {
         clientToken = tokenUtil.obtainAccessToken(mockMvc, clientUsername, clientPassword);
         adminToken = tokenUtil.obtainAccessToken(mockMvc, adminUsername,adminPassword);
         invalidToken = adminToken + "xpto"; // Simulates wrong password
+
+        //Instanciar o método request do Post
+        Category category = new Category(2L, "Eletro");
+        //Inserindo o conteudo da request do método Post
+        product = new Product(null,"Console Playstation 5","Lorem ipsum, dolor sit amet consectetur adipisicing elit. Qui ad, adipisci illum ipsam velit et odit eaque reprehenderit ex maxime delectus dolore labore, quisquam quae tempora natus esse aliquam veniam doloremque quam minima culpa alias maiores commodi. Perferendis enim", 3999.90,"https://raw.githubusercontent.com/devsuperior/dscatalog-resources/master/backend/img/1-big.jpg");
+        product.getCategories().add(category);
+        productDTO = new ProductDTO(product);
     }
     /*Exercícios de fixação: Testes de API com MockMvc*/
 
@@ -107,6 +115,7 @@ public class ProductControllerIT {
 
     * */
 
+    //1.	Inserção de produto insere produto com dados válidos quando logado como admin
     @Test
     public void insertShouldReturnProductDTOCreatedWhenAdminLogged() throws Exception {
         String jsonBody = objectMapper.writeValueAsString(productDTO);
@@ -117,7 +126,25 @@ public class ProductControllerIT {
                         .header("Authorization", "Bearer " + adminToken)
                         //Vai passar o corpo da requisição
                         .content(jsonBody)
+                        //Fala que o formato da requisição é Json
+                        .contentType(MediaType.APPLICATION_JSON)
                         //O Tipo da response do método
                         .accept(MediaType.APPLICATION_JSON));
+
+        //Verificar o status
+        result.andExpect(status().isCreated());
+        //Verifica o id do novo produto cadastrado
+        result.andExpect(jsonPath("$.id").exists());
+        //Verifica o name
+        result.andExpect(jsonPath("$.name").value("Console Playstation 5"));
+        //Verifica o description
+        result.andExpect(jsonPath("$.description").value("Lorem ipsum, dolor sit amet consectetur adipisicing elit. Qui ad, adipisci illum ipsam velit et odit eaque reprehenderit ex maxime delectus dolore labore, quisquam quae tempora natus esse aliquam veniam doloremque quam minima culpa alias maiores commodi. Perferendis enim"));
+        //Verifica o price
+        result.andExpect(jsonPath("$.price").value(3999.90));
+        //Verifica o imgUrl
+        result.andExpect(jsonPath("$.imgUrl").value("https://raw.githubusercontent.com/devsuperior/dscatalog-resources/master/backend/img/1-big.jpg"));
+        //Verifica o categories
+        result.andExpect(jsonPath("$.categories[0].id").value(2L));
+
     }
 }
