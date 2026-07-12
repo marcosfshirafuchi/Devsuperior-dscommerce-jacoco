@@ -13,10 +13,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -36,6 +37,8 @@ public class ProductControllerIT {
     @Autowired
     private ObjectMapper objectMapper;
 
+    private Long existingProductId, nonExistingProductId, dependentProductId;
+
     private String clientUsername, clientPassword, adminUsername, adminPassword;
 
     private String clientToken, adminToken, invalidToken;
@@ -54,6 +57,11 @@ public class ProductControllerIT {
         adminUsername = "alex@gmail.com";
         adminPassword = "123456";
         productName = "Macbook Pro";
+
+        existingProductId = 2L;
+        nonExistingProductId = 100L;
+        dependentProductId = 3L;
+
 
         clientToken = tokenUtil.obtainAccessToken(mockMvc, clientUsername, clientPassword);
         adminToken = tokenUtil.obtainAccessToken(mockMvc, adminUsername, adminPassword);
@@ -290,6 +298,93 @@ public class ProductControllerIT {
                         .content(jsonBody)
                         //Fala que o formato da requisição é Json
                         .contentType(MediaType.APPLICATION_JSON)
+                        //O Tipo da response do método
+                        .accept(MediaType.APPLICATION_JSON));
+
+        //Verificar o status
+        result.andExpect(status().isUnauthorized());
+    }
+
+    /*Problema 3: Deletar produto
+
+    Implemente os testes de API usando MockMvc para deleção de produto (método DELETE do ProductController), considerando os seguintes cenários. Lembre-se de inserir o token no cabeçalho da requisição.
+    1.	Deleção de produto deleta produto existente quando logado como admin
+    2.	Deleção de produto retorna 404 para produto inexistente quando logado como admin
+    3.	Deleção de produto retorna 400 para produto dependente quando logado como admin
+    4.	Deleção de produto retorna 403 quando logado como cliente
+    5.	Deleção de produto retorna 401 quando não logado como admin ou cliente
+
+    * */
+
+    //1.	Deleção de produto deleta produto existente quando logado como admin
+    @Test
+    public void deleteShouldReturnNoContentWhenIdExistsAndAminLogged() throws Exception {
+        ResultActions result =mockMvc
+                //No perform vai testar o metódo get do controller e sua url
+                .perform(delete("/products/{id}", existingProductId)
+                        //Vai passar o Bearer Token
+                        .header("Authorization", "Bearer " + adminToken)
+                        //O Tipo da response do método
+                        .accept(MediaType.APPLICATION_JSON));
+
+        //Verificar o status
+        result.andExpect(status().isNoContent());
+    }
+
+    //2.	Deleção de produto retorna 404 para produto inexistente quando logado como admin
+    @Test
+    public void deleteShouldReturnNotFoundWhenIdExistsAndAminLogged() throws Exception {
+        ResultActions result =mockMvc
+                //No perform vai testar o metódo get do controller e sua url
+                .perform(delete("/products/{id}", nonExistingProductId)
+                        //Vai passar o Bearer Token
+                        .header("Authorization", "Bearer " + adminToken)
+                        //O Tipo da response do método
+                        .accept(MediaType.APPLICATION_JSON));
+
+        //Verificar o status
+        result.andExpect(status().isNotFound());
+    }
+
+    //3.	Deleção de produto retorna 400 para produto dependente quando logado como admin
+    @Test
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public void deleteShouldReturnBadRequestWhenIdExistsAndAdminLogged() throws Exception {
+        ResultActions result =mockMvc
+                //No perform vai testar o metódo get do controller e sua url
+                .perform(delete("/products/{id}", dependentProductId)
+                        //Vai passar o Bearer Token
+                        .header("Authorization", "Bearer " + adminToken)
+                        //O Tipo da response do método
+                        .accept(MediaType.APPLICATION_JSON));
+
+        //Verificar o status
+        result.andExpect(status().isBadRequest());
+    }
+
+    //4.	Deleção de produto retorna 403 quando logado como cliente
+    @Test
+    public void deleteShouldReturnForbiddenWhenIdExistsAndClientLogged() throws Exception {
+        ResultActions result =mockMvc
+                //No perform vai testar o metódo get do controller e sua url
+                .perform(delete("/products/{id}", existingProductId)
+                        //Vai passar o Bearer Token
+                        .header("Authorization", "Bearer " + clientToken)
+                        //O Tipo da response do método
+                        .accept(MediaType.APPLICATION_JSON));
+
+        //Verificar o status
+        result.andExpect(status().isForbidden());
+    }
+
+    //5.	Deleção de produto retorna 401 quando não logado como admin ou cliente
+    @Test
+    public void deleteShouldReturnUnauthorizedWhenIdExistsAndInvalidToken() throws Exception {
+        ResultActions result =mockMvc
+                //No perform vai testar o metódo get do controller e sua url
+                .perform(delete("/products/{id}", existingProductId)
+                        //Vai passar o Bearer Token
+                        .header("Authorization", "Bearer " + invalidToken)
                         //O Tipo da response do método
                         .accept(MediaType.APPLICATION_JSON));
 
